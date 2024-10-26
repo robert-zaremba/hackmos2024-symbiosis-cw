@@ -1,5 +1,5 @@
-use cosmwasm_std::{Addr, StdResult, Uint128};
-use cosmwasm_std::{DepsMut, MessageInfo, Response};
+use cosmwasm_std::{Addr, Coin, StdResult, Uint128};
+use cosmwasm_std::{DepsMut, Response};
 
 use crate::error::ContractError;
 use crate::state::*;
@@ -22,12 +22,12 @@ pub fn new_affiliate(deps: DepsMut, user: Addr, parent: Addr) -> Result<Response
 
 pub fn distribute_rewards(
     deps: DepsMut,
-    info: MessageInfo,
     user: Addr,
+    funds: Vec<Coin>,
 ) -> Result<Response, ContractError> {
     let s = STATE.load(deps.storage)?;
-    let fee_factor = (s.fee_p as u128, 2u128);
-    let mut funds = info.funds.clone();
+    let fee_factor = (s.fee_p as u128, 100u128);
+    let mut funds = funds.clone();
     let mut parent = user;
     for i in 1..=MAX_PARENTS {
         let mut use_all = i == MAX_PARENTS;

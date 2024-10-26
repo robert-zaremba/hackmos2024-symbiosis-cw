@@ -54,7 +54,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         Execute::NewAffiliate { parent } => execute::new_affiliate(deps, info.sender, parent),
-        Execute::DistributeRewards { user } => execute::distribute_rewards(deps, info, user),
+        Execute::DistributeRewards { user } => execute::distribute_rewards(deps, user, info.funds),
     }
 }
 
@@ -132,14 +132,11 @@ mod tests {
         assert_eq!(empty, expected);
         let resp = query::affiliates(deps.as_ref(), addr_alice(deps.api));
         assert_eq!(resp, Ok(vec![]));
+        let s = STATE.load(deps.as_ref().storage).unwrap();
+        assert_eq!(s.fee_p, 10u32);
     }
 
-    #[test]
-    fn affiliate() {
-        let mut deps = setup();
-
-        // let info = mock_info("anyone", &coins(2, "token"));
-
+    fn mk_affiliates(deps: &mut DepsType) {
         let alice = addr_alice(deps.api);
         let parent1 = addr_parent1(deps.api);
         let parent2 = addr_parent2(deps.api);
@@ -148,6 +145,17 @@ mod tests {
         assert!(matches!(res, Ok(_)));
         let res = execute::new_affiliate(deps.as_mut(), alice.clone(), parent1.clone());
         assert!(matches!(res, Ok(_)));
+    }
+
+    #[test]
+    fn test_affiliate() {
+        let mut deps = setup();
+        mk_affiliates(&mut deps);
+        // let info = mock_info("anyone", &coins(2, "token"));
+
+        let alice = addr_alice(deps.api);
+        let parent1 = addr_parent1(deps.api);
+        let parent2 = addr_parent2(deps.api);
         let res = execute::new_affiliate(deps.as_mut(), alice.clone(), parent1.clone());
         assert!(matches!(res, Err(ContractError::AlreadyAffiliated {})));
 
@@ -165,6 +173,18 @@ mod tests {
         let res_bin = query(deps.as_ref(), mock_env(), Query::Affiliates { user: alice }).unwrap();
         let res: AffiliatesResp = from_json(&res_bin).unwrap();
         assert_eq!(res, expected_alice);
+    }
+
+    #[test]
+    fn test_rewards() {
+        let mut deps = setup();
+        mk_affiliates(&mut deps);
+        let alice = addr_alice(deps.api);
+        // let parent1 = addr_parent1(deps.api);
+        // let parent2 = addr_parent2(deps.api);
+
+        let _res =
+            execute::distribute_rewards(deps.as_mut(), alice.clone(), coins(100, "atom")).unwrap();
     }
 
     // #[test]
