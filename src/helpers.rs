@@ -29,20 +29,20 @@ impl CwTemplateContract {
         .into())
     }
 
-    /// Get Count
-    pub fn count<Q, T, CQ>(&self, querier: &Q) -> StdResult<RewardsResp>
-    where
-        Q: Querier,
-        T: Into<String>,
-        CQ: CustomQuery,
-    {
-        let msg = Query::GetCount {};
-        let query = WasmQuery::Smart {
-            contract_addr: self.addr().into(),
-            msg: to_json_binary(&msg)?,
-        }
-        .into();
-        let res: RewardsResp = QuerierWrapper::<CQ>::new(querier).query(&query)?;
-        Ok(res)
-    }
+    // /// Get Count
+    // pub fn count<Q, T, CQ>(&self, querier: &Q) -> StdResult<RewardsResp>
+    // where
+    //     Q: Querier,
+    //     T: Into<String>,
+    //     CQ: CustomQuery,
+    // {
+    //     let msg = Query::GetCount {};
+    //     let query = WasmQuery::Smart {
+    //         contract_addr: self.addr().into(),
+    //         msg: to_json_binary(&msg)?,
+    //     }
+    //     .into();
+    //     let res: RewardsResp = QuerierWrapper::<CQ>::new(querier).query(&query)?;
+    //     Ok(res)
+    // }
 }

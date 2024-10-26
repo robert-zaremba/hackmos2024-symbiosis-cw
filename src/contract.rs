@@ -25,7 +25,7 @@ pub struct InstantiateMsg {
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let state = State {
@@ -42,7 +42,7 @@ pub fn instantiate(
 #[cw_serde]
 pub enum Execute {
     NewAffiliate { parent: Addr },
-    DistributeRewards { dest: Addr },
+    DistributeRewards { user: Addr },
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -54,7 +54,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         Execute::NewAffiliate { parent } => execute::new_affiliate(deps, info.sender, parent),
-        Execute::DistributeRewards { dest } => execute::distribute_rewards(deps, info, dest),
+        Execute::DistributeRewards { user } => execute::distribute_rewards(deps, info, user),
     }
 }
 
