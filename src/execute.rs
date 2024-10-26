@@ -26,7 +26,7 @@ pub fn distribute_rewards(
     funds: Vec<Coin>,
 ) -> Result<Response, ContractError> {
     let s = STATE.load(deps.storage)?;
-    let fee_factor = (s.fee_p as u128, 100u128);
+    let fee_factor = (100 - s.fee_p as u128, 100u128);
     let mut funds = funds.clone();
     let mut parents = query::affiliates(deps.as_ref(), user)?;
     if parents.is_empty() {

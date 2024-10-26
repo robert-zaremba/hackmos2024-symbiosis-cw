@@ -140,11 +140,12 @@ mod tests {
         let alice = addr_alice(deps.api);
         let parent1 = addr_parent1(deps.api);
         let parent2 = addr_parent2(deps.api);
+        let bob = addr_bob(deps.api);
 
         let res = execute::new_affiliate(deps.as_mut(), parent1.clone(), parent2.clone());
         assert!(matches!(res, Ok(_)));
-        let res = execute::new_affiliate(deps.as_mut(), alice.clone(), parent1.clone());
-        assert!(matches!(res, Ok(_)));
+        let _res = execute::new_affiliate(deps.as_mut(), alice.clone(), parent1.clone()).unwrap();
+        let _res = execute::new_affiliate(deps.as_mut(), bob, parent2.clone()).unwrap();
     }
 
     #[test]
@@ -181,6 +182,7 @@ mod tests {
         mk_affiliates(&mut deps);
         let alice = addr_alice(deps.api);
         let bob = addr_bob(deps.api);
+        let charlie = deps.api.addr_make("charlie");
         let parent1 = addr_parent1(deps.api);
         let parent2 = addr_parent2(deps.api);
         let cf = addr_cf(deps.api);
@@ -201,6 +203,18 @@ mod tests {
         assert_eq!(
             res.attributes,
             vec![
+                attr("parent", parent2.as_ref()),
+                attr("action", "distribute_rewards"),
+            ]
+        );
+        let _res =
+            execute::distribute_rewards(deps.as_mut(), bob.clone(), coins(500, "atom")).unwrap();
+
+        let res = execute::distribute_rewards(deps.as_mut(), charlie.clone(), coins(2000, "ntiv"))
+            .unwrap();
+        assert_eq!(
+            res.attributes,
+            vec![
                 attr("parent", &cf.as_ref()),
                 attr("action", "distribute_rewards"),
             ]
@@ -210,7 +224,16 @@ mod tests {
         assert_eq!(res, vec![]);
 
         let res = query::rewards(deps.as_ref(), parent1.clone()).unwrap();
-        assert_eq!(res, vec![Coin::new(10u128, "atom")]);
+        assert_eq!(res, vec![Coin::new(90u128, "atom")]);
+
+        let res = query::rewards(deps.as_ref(), parent2.clone()).unwrap();
+        assert_eq!(
+            res,
+            vec![Coin::new(510u128, "atom"), Coin::new(200u128, "ntiv")]
+        );
+
+        let res = query::rewards(deps.as_ref(), cf.clone()).unwrap();
+        assert_eq!(res, vec![Coin::new(2000u128, "ntiv")]);
     }
 
     //     match res {
