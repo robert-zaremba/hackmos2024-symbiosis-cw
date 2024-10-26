@@ -61,15 +61,17 @@ pub fn execute(
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum Query {
-    // GetCount returns the current count as a json-encoded number
     #[returns(query::RewardsResp)]
     Rewards { user: Addr },
+    #[returns(query::AffiliatesResp)]
+    Affiliates { user: Addr },
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: Query) -> StdResult<Binary> {
     match msg {
         Query::Rewards { user } => to_json_binary(&query::rewards(deps, user)?),
+        Query::Affiliates { user } => to_json_binary(&query::affiliates(deps, user)?),
     }
 }
 
