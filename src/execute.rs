@@ -25,25 +25,19 @@ pub fn distribute_rewards(
     info: MessageInfo,
     user: Addr,
 ) -> Result<Response, ContractError> {
-    // STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-    //     if info.sender != state.owner {
-    //         return Err(ContractError::Unauthorized {});
-    //     }
-    //     state.count = count;
-    //     Ok(state)
-    // })?;
-    //
-
     let s = STATE.load(deps.storage)?;
     let fee_factor = (s.fee_p as u128, 2u128);
     let mut funds = info.funds.clone();
     let mut parent = user;
     for i in 1..=MAX_PARENTS {
+        let mut use_all = i == MAX_PARENTS;
         let next_parent = AFF_PARENTS.load(deps.storage, parent.clone());
         if next_parent.is_err() {
-            break;
+            use_all = true;
+            parent = s.community_fund.clone();
+        } else {
+            parent = next_parent.unwrap();
         }
-        parent = next_parent.unwrap();
         for c in &mut funds {
             let cut = c.amount.mul_floor(fee_factor);
             c.amount -= cut;
@@ -56,7 +50,10 @@ pub fn distribute_rewards(
                     }
                     return Ok(cut);
                 },
-            );
+            )?;
+        }
+        if use_all {
+            break;
         }
     }
 
