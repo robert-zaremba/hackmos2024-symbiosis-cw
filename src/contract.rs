@@ -76,73 +76,108 @@ pub fn query(deps: Deps, _env: Env, msg: Query) -> StdResult<Binary> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_json};
+    use cosmwasm_std::testing::{
+        message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage,
+    };
+    use cosmwasm_std::{coins, from_json, Coin, Empty, OwnedDeps};
+    use query::RewardsResp;
 
-    #[test]
-    fn proper_initialization() {
+    fn addr_cf(api: MockApi) -> Addr {
+        // Addr::unchecked("community_fund")
+        api.addr_make("cf")
+    }
+    fn addr_alice(api: MockApi) -> Addr {
+        api.addr_make("alice")
+    }
+    fn addr_bob(api: MockApi) -> Addr {
+        api.addr_make("bob")
+    }
+    fn addr_parent1(api: MockApi) -> Addr {
+        api.addr_make("parent1")
+    }
+    fn addr_parent2(api: MockApi) -> Addr {
+        api.addr_make("parent2")
+    }
+
+    type DepsType = OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>;
+
+    fn setup() -> DepsType {
         let mut deps = mock_dependencies();
-
-        let msg = InstantiateMsg {
-            count: 17,
-            fee_p: 10,
-        };
-        let info = mock_info("creator", &coins(1000, "earth"));
+        let community_fund = addr_cf(deps.api);
+        let msg = InstantiateMsg { community_fund };
+        let creator = deps.api.addr_make("creator");
+        let info = message_info(&creator, &vec![]);
 
         // we can just call .unwrap() to assert this was a success
         let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
         assert_eq!(0, res.messages.len());
-
-        // it worked, let's query the state
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_json(&res).unwrap();
-        assert_eq!(17, value.count);
+        deps
     }
 
     #[test]
-    fn increment() {
-        let mut deps = mock_dependencies();
+    fn proper_initialization() {
+        let deps = setup();
+        let res = query(
+            deps.as_ref(),
+            mock_env(),
+            Query::Rewards {
+                user: addr_alice(deps.api),
+            },
+        )
+        .unwrap();
+        let expected: RewardsResp = from_json(&res).unwrap();
+        let empty: RewardsResp = Vec::new();
+        assert_eq!(empty, expected);
+    }
 
-        let msg = InstantiateMsg { count: 17 };
-        let info = mock_info("creator", &coins(2, "token"));
-        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+    #[test]
+    fn affiliate() {
+        let mut deps = setup();
 
-        // beneficiary can release it
-        let info = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Increment {};
-        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
+        // let info = mock_info("anyone", &coins(2, "token"));
+
+        let alice = addr_alice(deps.api);
+        let parent1 = addr_parent1(deps.api);
+        let parent2 = addr_parent1(deps.api);
+
+        let res = execute::new_affiliate(deps.as_mut(), parent1.clone(), parent2.clone());
+        assert!(matches!(res, Ok(_)));
+        let res = execute::new_affiliate(deps.as_mut(), alice.clone(), parent1.clone());
+        assert!(matches!(res, Ok(_)));
+        let res = execute::new_affiliate(deps.as_mut(), alice, parent1);
+        assert!(matches!(res, Err(ContractError::AlreadyAffiliated {})));
 
         // should increase counter by 1
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_json(&res).unwrap();
-        assert_eq!(18, value.count);
+        // let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
+        // let value: GetCountResponse = from_json(&res).unwrap();
+        // assert_eq!(18, value.count);
     }
 
-    #[test]
-    fn reset() {
-        let mut deps = mock_dependencies();
+    // #[test]
+    // fn reset() {
+    //     let mut deps = mock_dependencies();
 
-        let msg = InstantiateMsg { count: 17 };
-        let info = mock_info("creator", &coins(2, "token"));
-        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+    //     let msg = InstantiateMsg { count: 17 };
+    //     let info = mock_info("creator", &coins(2, "token"));
+    //     let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
-        // beneficiary can release it
-        let unauth_info = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
-        match res {
-            Err(ContractError::Unauthorized {}) => {}
-            _ => panic!("Must return unauthorized error"),
-        }
+    //     // beneficiary can release it
+    //     let unauth_info = mock_info("anyone", &coins(2, "token"));
+    //     let msg = ExecuteMsg::Reset { count: 5 };
+    //     let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
+    //     match res {
+    //         Err(ContractError::Unauthorized {}) => {}
+    //         _ => panic!("Must return unauthorized error"),
+    //     }
 
-        // only the original creator can reset the counter
-        let auth_info = mock_info("creator", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
+    //     // only the original creator can reset the counter
+    //     let auth_info = mock_info("creator", &coins(2, "token"));
+    //     let msg = ExecuteMsg::Reset { count: 5 };
+    //     let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
 
-        // should now be 5
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_json(&res).unwrap();
-        assert_eq!(5, value.count);
-    }
+    //     // should now be 5
+    //     let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
+    //     let value: GetCountResponse = from_json(&res).unwrap();
+    //     assert_eq!(5, value.count);
+    // }
 }
