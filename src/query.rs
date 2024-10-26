@@ -27,6 +27,7 @@ pub fn rewards(deps: Deps, user: Addr) -> StdResult<RewardsResp> {
 }
 
 pub type AffiliatesResp = Vec<Addr>;
+
 pub fn affiliates(deps: Deps, user: Addr) -> StdResult<AffiliatesResp> {
     let mut parent = user;
     let mut res = vec![];

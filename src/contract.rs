@@ -82,7 +82,7 @@ mod tests {
         message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage,
     };
     use cosmwasm_std::{coins, from_json, Coin, Empty, OwnedDeps};
-    use query::RewardsResp;
+    use query::{AffiliatesResp, RewardsResp};
 
     fn addr_cf(api: MockApi) -> Addr {
         // Addr::unchecked("community_fund")
@@ -130,6 +130,8 @@ mod tests {
         let expected: RewardsResp = from_json(&res).unwrap();
         let empty: RewardsResp = Vec::new();
         assert_eq!(empty, expected);
+        let resp = query::affiliates(deps.as_ref(), addr_alice(deps.api));
+        assert_eq!(resp, Ok(vec![]));
     }
 
     #[test]
@@ -140,19 +142,29 @@ mod tests {
 
         let alice = addr_alice(deps.api);
         let parent1 = addr_parent1(deps.api);
-        let parent2 = addr_parent1(deps.api);
+        let parent2 = addr_parent2(deps.api);
 
         let res = execute::new_affiliate(deps.as_mut(), parent1.clone(), parent2.clone());
         assert!(matches!(res, Ok(_)));
         let res = execute::new_affiliate(deps.as_mut(), alice.clone(), parent1.clone());
         assert!(matches!(res, Ok(_)));
-        let res = execute::new_affiliate(deps.as_mut(), alice, parent1);
+        let res = execute::new_affiliate(deps.as_mut(), alice.clone(), parent1.clone());
         assert!(matches!(res, Err(ContractError::AlreadyAffiliated {})));
 
-        // should increase counter by 1
-        // let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        // let value: GetCountResponse = from_json(&res).unwrap();
-        // assert_eq!(18, value.count);
+        let res = query::affiliates(deps.as_ref(), parent2.clone());
+        assert_eq!(res, Ok(vec![]));
+
+        let res = query::affiliates(deps.as_ref(), parent1.clone());
+        assert_eq!(res, Ok(vec![parent2.clone()]));
+
+        let res = query::affiliates(deps.as_ref(), alice.clone());
+        let expected_alice = vec![parent1.clone(), parent2.clone()];
+        assert_eq!(res, Ok(expected_alice.clone()));
+
+        // e2e test including JS
+        let res_bin = query(deps.as_ref(), mock_env(), Query::Affiliates { user: alice }).unwrap();
+        let res: AffiliatesResp = from_json(&res_bin).unwrap();
+        assert_eq!(res, expected_alice);
     }
 
     // #[test]
