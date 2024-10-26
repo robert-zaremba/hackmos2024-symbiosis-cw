@@ -1,8 +1,7 @@
 use cosmwasm_std::Addr;
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{DepsMut, MessageInfo, Response};
 
-use super::*;
-
+use crate::error::ContractError;
 use crate::state::*;
 
 pub fn new_affiliate(deps: DepsMut, user: Addr, parent: Addr) -> Result<Response, ContractError> {
