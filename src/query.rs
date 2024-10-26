@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, Deps, StdResult};
+use cosmwasm_std::{Addr, Coin, Deps, Order, StdResult};
 
 use crate::state::REWARDS;
 
@@ -15,5 +15,15 @@ pub type RewardsResp = Vec<Coin>;
 
 pub fn rewards(deps: Deps, user: Addr) -> StdResult<RewardsResp> {
     // let state = STATE.load(deps.storage)?;
-    Ok(vec![])
+    //
+    //
+    let all: RewardsResp = REWARDS
+        .prefix(user)
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|x| {
+            let (denom, amount) = x.unwrap();
+            return Coin { denom, amount };
+        })
+        .collect();
+    Ok(all)
 }
