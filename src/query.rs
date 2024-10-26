@@ -21,6 +21,7 @@ pub fn rewards(deps: Deps, user: Addr) -> StdResult<RewardsResp> {
         .prefix(user)
         .range(deps.storage, None, None, Order::Ascending)
         .map(|x| {
+            // TODO: don't unwrap
             let (denom, amount) = x.unwrap();
             return Coin { denom, amount };
         })
