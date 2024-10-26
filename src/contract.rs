@@ -31,6 +31,7 @@ pub fn instantiate(
     let state = State {
         next_aff_id: 1,
         community_fund: msg.community_fund,
+        fee_p: 10,
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     STATE.save(deps.storage, &state)?;
@@ -82,7 +83,10 @@ mod tests {
     fn proper_initialization() {
         let mut deps = mock_dependencies();
 
-        let msg = InstantiateMsg { count: 17 };
+        let msg = InstantiateMsg {
+            count: 17,
+            fee_p: 10,
+        };
         let info = mock_info("creator", &coins(1000, "earth"));
 
         // we can just call .unwrap() to assert this was a success

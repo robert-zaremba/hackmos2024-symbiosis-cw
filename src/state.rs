@@ -10,6 +10,8 @@ use cw_storage_plus::{Item, Map};
 pub struct State {
     pub next_aff_id: u64,
     pub community_fund: Addr,
+    /// fee as percent value
+    pub fee_p: u32,
 }
 
 pub const MAX_PARENTS: usize = 5;
