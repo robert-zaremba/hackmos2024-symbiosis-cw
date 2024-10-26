@@ -6,7 +6,7 @@ use cosmwasm_std::{
     WasmQuery,
 };
 
-use crate::msg::{ExecuteMsg, GetCountResponse, QueryMsg};
+use crate::contract::{ExecuteMsg, GetCountResponse, Query};
 
 /// CwTemplateContract is a wrapper around Addr that provides a lot of helpers
 /// for working with this.
@@ -35,7 +35,7 @@ impl CwTemplateContract {
         T: Into<String>,
         CQ: CustomQuery,
     {
-        let msg = QueryMsg::GetCount {};
+        let msg = Query::GetCount {};
         let query = WasmQuery::Smart {
             contract_addr: self.addr().into(),
             msg: to_json_binary(&msg)?,

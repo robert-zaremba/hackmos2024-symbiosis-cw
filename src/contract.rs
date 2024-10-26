@@ -1,15 +1,25 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, GetCountResponse, InstantiateMsg, QueryMsg};
+use crate::execute;
+use crate::query;
 use crate::state::{State, STATE};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:hackmos-affiliate";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[cw_serde]
+pub struct InstantiateMsg {
+    pub community_fund: Addr,
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -19,16 +29,19 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let state = State {
-        count: msg.count,
-        owner: info.sender.clone(),
+        next_aff_id: 1,
+        community_fund: msg.community_fund,
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     STATE.save(deps.storage, &state)?;
 
-    Ok(Response::new()
-        .add_attribute("method", "instantiate")
-        .add_attribute("owner", info.sender)
-        .add_attribute("count", msg.count.to_string()))
+    Ok(Response::new().add_attribute("method", "instantiate"))
+}
+
+#[cw_serde]
+pub enum Execute {
+    NewAffiliate { parent: Addr },
+    DistributeRewards { dest: Addr },
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -36,53 +49,26 @@ pub fn execute(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    msg: ExecuteMsg,
+    msg: Execute,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Increment {} => execute::increment(deps),
-        ExecuteMsg::Reset { count } => execute::reset(deps, info, count),
+        Execute::NewAffiliate { parent } => execute::new_affiliate(deps, info.sender, parent),
+        Execute::DistributeRewards { dest } => execute::distribute_rewards(deps, info, dest),
     }
 }
 
-pub mod execute {
-    use super::*;
-
-    pub fn increment(deps: DepsMut) -> Result<Response, ContractError> {
-        let access = STATE.access(&deps.storage).get();
-
-        // STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-        //     state.count += 1;
-        //     Ok(state)
-        // })?;
-
-        Ok(Response::new().add_attribute("action", "increment"))
-    }
-
-    pub fn reset(deps: DepsMut, info: MessageInfo, count: i32) -> Result<Response, ContractError> {
-        STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-            if info.sender != state.owner {
-                return Err(ContractError::Unauthorized {});
-            }
-            state.count = count;
-            Ok(state)
-        })?;
-        Ok(Response::new().add_attribute("action", "reset"))
-    }
+#[cw_serde]
+#[derive(QueryResponses)]
+pub enum Query {
+    // GetCount returns the current count as a json-encoded number
+    #[returns(query::GetCountResponse)]
+    GetCount {},
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: Query) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetCount {} => to_json_binary(&query::count(deps)?),
-    }
-}
-
-pub mod query {
-    use super::*;
-
-    pub fn count(deps: Deps) -> StdResult<GetCountResponse> {
-        let state = STATE.load(deps.storage)?;
-        Ok(GetCountResponse { count: state.count })
+        Query::GetCount {} => to_json_binary(&query::count(deps)?),
     }
 }
 
