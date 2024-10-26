@@ -1,8 +1,8 @@
-use cosmwasm_std::{Addr, Coin, StdResult, Uint128};
+use cosmwasm_std::{Addr, Attribute, Coin, StdResult, Uint128};
 use cosmwasm_std::{DepsMut, Response};
 
 use crate::error::ContractError;
-use crate::state::*;
+use crate::{query, state::*};
 
 pub fn new_affiliate(deps: DepsMut, user: Addr, parent: Addr) -> Result<Response, ContractError> {
     if AFF_PARENTS.has(deps.storage, user.clone()) {
@@ -28,19 +28,20 @@ pub fn distribute_rewards(
     let s = STATE.load(deps.storage)?;
     let fee_factor = (s.fee_p as u128, 100u128);
     let mut funds = funds.clone();
-    let mut parent = user;
-    for i in 1..=MAX_PARENTS {
-        let mut use_all = i == MAX_PARENTS;
-        let next_parent = AFF_PARENTS.load(deps.storage, parent.clone());
-        if next_parent.is_err() {
-            use_all = true;
-            parent = s.community_fund.clone();
-        } else {
-            parent = next_parent.unwrap();
-        }
+    let mut parents = query::affiliates(deps.as_ref(), user)?;
+    if parents.is_empty() {
+        parents.push(s.community_fund.clone());
+    }
+    let last_idx = parents.len() - 1;
+    for (i, parent) in parents.iter().enumerate() {
         for c in &mut funds {
-            let cut = c.amount.mul_floor(fee_factor);
-            c.amount -= cut;
+            let cut = if i == last_idx {
+                c.amount
+            } else {
+                let cut = c.amount.mul_floor(fee_factor);
+                c.amount -= cut;
+                cut
+            };
             REWARDS.update(
                 deps.storage,
                 (parent.clone(), c.denom.clone()),
@@ -52,10 +53,14 @@ pub fn distribute_rewards(
                 },
             )?;
         }
-        if use_all {
-            break;
-        }
     }
 
-    Ok(Response::new().add_attribute("action", "distribute_rewards"))
+    let mut res = Response::new();
+    res.attributes = parents
+        .iter()
+        .map(|p| Attribute::new("parent", p.to_string()))
+        .collect();
+    res.attributes
+        .push(Attribute::new("action", "distribute_rewards"));
+    Ok(res)
 }
