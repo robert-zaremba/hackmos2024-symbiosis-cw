@@ -1,5 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
+use cosmwasm_std::Addr;
+
 #[cw_serde]
 pub struct InstantiateMsg {
     pub count: i32,
@@ -7,8 +9,8 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    Increment {},
-    Reset { count: i32 },
+    NewAffiliate { parent: Addr },
+    DistributeFees {},
 }
 
 #[cw_serde]

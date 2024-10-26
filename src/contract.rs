@@ -48,10 +48,12 @@ pub mod execute {
     use super::*;
 
     pub fn increment(deps: DepsMut) -> Result<Response, ContractError> {
-        STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-            state.count += 1;
-            Ok(state)
-        })?;
+        let access = STATE.access(&deps.storage).get();
+
+        // STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
+        //     state.count += 1;
+        //     Ok(state)
+        // })?;
 
         Ok(Response::new().add_attribute("action", "increment"))
     }
