@@ -11,9 +11,9 @@ pub struct RewardsResp2 {
     pub xx: u64,
 }
 
-pub struct RewardsResp(Vec<Coin>);
+pub type RewardsResp = Vec<Coin>;
 
 pub fn rewards(deps: Deps, user: Addr) -> StdResult<RewardsResp> {
     // let state = STATE.load(deps.storage)?;
-    Ok(RewardsResp(vec![]))
+    Ok(vec![])
 }
