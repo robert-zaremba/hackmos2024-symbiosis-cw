@@ -63,6 +63,8 @@ pub fn execute(
 pub enum Query {
     #[returns(query::RewardsResp)]
     Rewards { user: Addr },
+    #[returns(query::LeaderboardResp)]
+    Leaderboard {},
     #[returns(query::AffiliatesResp)]
     Affiliates { user: Addr },
 }
@@ -71,6 +73,7 @@ pub enum Query {
 pub fn query(deps: Deps, _env: Env, msg: Query) -> StdResult<Binary> {
     match msg {
         Query::Rewards { user } => to_json_binary(&query::rewards(deps, user)?),
+        Query::Leaderboard {} => to_json_binary(&query::leaderboard(deps)?),
         Query::Affiliates { user } => to_json_binary(&query::affiliates(deps, user)?),
     }
 }
@@ -221,19 +224,30 @@ mod tests {
         );
 
         let res = query::rewards(deps.as_ref(), alice.clone()).unwrap();
-        assert_eq!(res, vec![]);
+        let expect_alice = vec![];
+        assert_eq!(res, expect_alice.clone());
 
         let res = query::rewards(deps.as_ref(), parent1.clone()).unwrap();
-        assert_eq!(res, vec![Coin::new(90u128, "atom")]);
+        let expect_parent1 = vec![Coin::new(90u128, "atom")];
+        assert_eq!(res, expect_parent1.clone());
 
         let res = query::rewards(deps.as_ref(), parent2.clone()).unwrap();
-        assert_eq!(
-            res,
-            vec![Coin::new(510u128, "atom"), Coin::new(200u128, "ntiv")]
-        );
+        let expect_parent2 = vec![Coin::new(510u128, "atom"), Coin::new(200u128, "ntiv")];
+        assert_eq!(res, expect_parent2.clone());
 
         let res = query::rewards(deps.as_ref(), cf.clone()).unwrap();
-        assert_eq!(res, vec![Coin::new(2000u128, "ntiv")]);
+        let expect_cf = vec![Coin::new(2000u128, "ntiv")];
+        assert_eq!(res, expect_cf.clone());
+
+        let res = query::leaderboard(deps.as_ref()).unwrap();
+        assert_eq!(
+            res,
+            vec![
+                (parent1, expect_parent1),
+                (parent2, expect_parent2),
+                (cf, expect_cf),
+            ]
+        );
     }
 
     //     match res {
