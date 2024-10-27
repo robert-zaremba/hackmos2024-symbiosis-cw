@@ -1,15 +1,6 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Deps, Order, StdResult};
 
-use crate::state::{AFF_PARENTS, MAX_PARENTS, REWARDS};
-
-// use crate::state::*;
-
-// We define a custom struct for each query response
-#[cw_serde]
-pub struct RewardsResp2 {
-    pub xx: u64,
-}
+use crate::state::*;
 
 pub type RewardsResp = Vec<Coin>;
 
