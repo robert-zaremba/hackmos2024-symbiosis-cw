@@ -2,6 +2,7 @@
 use cosmwasm_std::entry_point;
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Coin;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
@@ -43,6 +44,9 @@ pub fn instantiate(
 pub enum Execute {
     NewAffiliate { parent: Addr },
     DistributeRewards { user: Addr },
+
+    // UI testing
+    TestAddRewards { user: Addr, funds: Coin },
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -55,6 +59,9 @@ pub fn execute(
     match msg {
         Execute::NewAffiliate { parent } => execute::new_affiliate(deps, info.sender, parent),
         Execute::DistributeRewards { user } => execute::distribute_rewards(deps, user, info.funds),
+        Execute::TestAddRewards { user, funds } => {
+            execute::distribute_rewards(deps, user, vec![funds])
+        }
     }
 }
 
